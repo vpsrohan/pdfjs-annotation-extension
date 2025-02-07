@@ -8,6 +8,7 @@ import { isElementInDOM, removeCssCustomProperty } from '../utils/utils'
 import { CURSOR_CSS_PROPERTY, PAINTER_IS_PAINTING_STYLE, PAINTER_PAINTING_TYPE, PAINTER_WRAPPER_PREFIX } from './const'
 import { Editor } from './editor/editor'
 import { EditorCircle } from './editor/editor_circle'
+import {EditorTriangle } from './editor/editor_triangle'
 import { EditorFreeHand } from './editor/editor_free_hand'
 import { EditorFreeHighlight } from './editor/editor_free_highlight'
 import { EditorFreeText } from './editor/editor_free_text'
@@ -386,6 +387,22 @@ export class Painter {
                     }
                 })
                 break
+            case AnnotationType.TRIANGLE:
+                editor=new EditorTriangle({
+                    userName: this.userName,
+                    pdfViewerApplication: this.pdfViewerApplication,
+                    konvaStage,
+                    pageNumber,
+                    annotation,
+                    onAdd: annotationStore => {
+                        this.saveToStore(annotationStore)
+                        if(annotation.isOnce){
+                            this.setDefaultMode()
+                            this.selector.select(annotationStore.id)
+                        }
+                    }
+                })
+                break
             case AnnotationType.FREEHAND:
                 editor = new EditorFreeHand({
                     userName: this.userName,
@@ -611,6 +628,7 @@ export class Painter {
             case AnnotationType.FREETEXT:
             case AnnotationType.RECTANGLE:
             case AnnotationType.CIRCLE:
+            case AnnotationType.TRIANGLE:
             case AnnotationType.FREEHAND:
             case AnnotationType.FREE_HIGHLIGHT:
             case AnnotationType.SIGNATURE:

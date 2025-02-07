@@ -58,6 +58,12 @@ const RectangleSvg = () => (
     </svg>
 )
 
+const TriangleSvg = () => (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" width="50" height="1em" viewBox="0 0 512 512">
+        <path fill="currentColor"    d="M256 32L20 464h472L256 32z"></path>
+    </svg>
+)
+
 const EllipseSvg = () => (
     <svg height="1em" fill="currentColor" viewBox="0 0 512 512">
         <path fill="currentColor" d="M464 256A208 208 0 1 0 48 256a208 208 0 1 0 416 0zM0 256a256 256 0 1 1 512 0A256 256 0 1 1 0 256z"></path>
@@ -152,6 +158,8 @@ const RectangleIcon = (props: Partial<CustomIconComponentProps>) => <Icon compon
 
 const CircleIcon = (props: Partial<CustomIconComponentProps>) => <Icon component={EllipseSvg} {...props} />
 
+const TriangleIcon=(props:Partial<CustomIconComponentProps>)=> <Icon component={TriangleSvg} {...props} />
+
 const FreehandIcon = (props: Partial<CustomIconComponentProps>) => <Icon component={FreehandSvg} {...props} />
 
 const FreeHighlightIcon = (props: Partial<CustomIconComponentProps>) => <Icon component={FreeHighlightSvg} {...props} />
@@ -172,6 +180,7 @@ const StarIcon = (props: Partial<CustomIconComponentProps>) => <Icon component={
 
 export {
     CircleIcon,
+    TriangleIcon,
     FontSizeIcon,
     FreehandIcon,
     FreeHighlightIcon,
