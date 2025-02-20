@@ -5,6 +5,8 @@
         "strikeout": "Strikeout",
         "underline": "Underline",
         "rectangle": "Rectangle",
+        "triangle": "Triangle",
+        "polygon": "Polygon",
         "circle": "Circle",
         "freehand": "Free Hand",
         "freeHighlight": "Free Highlight",
