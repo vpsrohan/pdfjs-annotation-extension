@@ -1,6 +1,5 @@
 import {
     CircleIcon,
-    TriangleIcon,
     FreehandIcon,
     FreeHighlightIcon,
     FreetextIcon,
@@ -35,7 +34,6 @@ export type PdfjsAnnotationSubtype =
     | 'StrikeOut'
     | 'Stamp'
     | 'FileAttachment'
-    | 'Triangle'
 
 // PDF.js 批注类型
 export enum PdfjsAnnotationType {
@@ -65,8 +63,7 @@ export enum PdfjsAnnotationType {
     TRAPNET = 23,
     WATERMARK = 24,
     THREED = 25,
-    REDACT = 26,
-    TRIANGLE = 27
+    REDACT = 26
 }
 
 // PDF.js 自带的批注编辑器类型枚举
@@ -95,8 +92,7 @@ export enum AnnotationType {
     FREE_HIGHLIGHT = 8, // 自由高亮批注
     SIGNATURE = 9, // 签名批注
     STAMP = 10, // 盖章批注
-    TRIANGLE = 11,
-    POLYGON = 12
+    POLYGON = 11
 }
 
 // 定义批注类型的接口
@@ -240,21 +236,7 @@ export const annotationDefinitions: IAnnotationType[] = [
             opacity: defaultOptions.setting.OPACITY // 默认透明度
         }
     },
-    {
-        name: 'triangle',
-        type: AnnotationType.TRIANGLE,
-        pdfjsEditorType: PdfjsAnnotationEditorType.INK,
-        pdfjsAnnotationType: PdfjsAnnotationType.TRIANGLE,
-        subtype: 'Triangle',
-        isOnce: true,
-        readonly: false,
-        icon: <TriangleIcon />,
-        style: {
-            color: defaultOptions.setting.COLOR, // 默认三角形颜色
-            strokeWidth: defaultOptions.setting.STROKE_WIDTH, // 默认线条宽度
-            opacity: defaultOptions.setting.OPACITY // 默认透明度
-        }
-    },
+
     {
         name: 'polygon',
         type: AnnotationType.POLYGON,
