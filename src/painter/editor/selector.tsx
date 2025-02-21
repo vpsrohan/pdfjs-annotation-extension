@@ -32,7 +32,7 @@ export class Selector {
     private _currentTransformerId: string | null = null // 当前激活的变换器ID
 
     private selectedId: string | null = null
-
+    private anchorLayer: Konva.Layer | null = null
     // 构造函数，初始化选择器类
     constructor({ konvaCanvasStore, getAnnotationStore, onChange, onDelete, onSelected }: ISelectorOptions) {
         this.konvaCanvasStore = konvaCanvasStore
@@ -71,6 +71,7 @@ export class Selector {
     private bindStageEvents(konvaStage: Konva.Stage): void {
         konvaStage.on('click tap', e => {
             if (e.target !== konvaStage) return
+            console.log('this will clear')
             this.clearTransformers()
         })
     }
@@ -272,28 +273,29 @@ export class Selector {
             this.getBackgroundLayer(konvaStage).add(transformer)
             this.transformerStore.set(groupId, transformer)
             return
-        } else this.createPolygonTransformer(group, konvaStage)
+        } else this.createPolygonTempTransformer(group, konvaStage)
     }
-    private createPolygonTransformer(group: Konva.Group, konvaStage: Konva.Stage) {
+
+    private createPolygonTempTransformer(group: Konva.Group, konvaStage: Konva.Stage) {
         const groupId = group.id()
 
-        // Remove existing transformer
         const existingTransformer = konvaStage.findOne('.active-transformer') as Konva.Transformer
         if (existingTransformer) existingTransformer.destroy()
 
         this.currentTransformerId = groupId
         const rawAnnotationStore = this.getAnnotationStore(groupId)
 
-        // Get polygon shape from the group
+        //  Get polygon shape from the group
         const polygon = group.children[0] as Konva.Line
-        let points = [...polygon.points()]
+        const points = [...polygon.points()] 
 
-        // Create a new layer for anchors
-        const anchorLayer = new Konva.Layer()
+        // 🔹 Create a new layer for anchors
+        this.anchorLayer = new Konva.Layer()
+        this.anchorLayer.x(group.x()) // ✅ Set anchorLayer X to match group 
+        this.anchorLayer.y(group.y()) // To fix the issues of misalignment of anchors while dragging the group
 
-        // Transformer for polygon
+        // 🔹 Transformer for polygon
         const transformer = new Konva.Transformer({
-            nodes: [polygon],
             resizeEnabled: false,
             rotateEnabled: false,
             borderStrokeWidth: 2,
@@ -302,81 +304,68 @@ export class Selector {
             padding: 5
         })
 
-        // Array to store anchor references
-        let anchors: Konva.Circle[] = []
+        // ✅ Convert `points` array into { x, y } objects
+        let pointPairs = points.reduce((acc, val, index, arr) => {
+            if (index % 2 === 0) acc.push({ x: val, y: arr[index + 1] })
+            return acc
+        }, [])
 
-        // Clear existing anchors if any
-        const clearAnchors = () => {
-            anchors.forEach(anchor => anchor.destroy())
-            anchors = []
-        }
-        clearAnchors()
-
-        // Function to create anchor points
-        const createAnchor = (x: number, y: number, index: number) => {
-            const anchor = new Konva.Circle({
-                x,
-                y,
+        // 🔹 Function to create anchor points
+        const createAnchor = (index: number) => {
+            return new Konva.Circle({
+                x: pointPairs[index].x,
+                y: pointPairs[index].y,
                 radius: 5,
                 fill: 'black',
                 draggable: !rawAnnotationStore.readonly,
                 name: `anchor-${index}`
             })
+        }
 
+        // 🔹 Create initial anchors from polygon points
+        const anchors = pointPairs.map((_, i) => createAnchor(i))
+
+        // 🔹 Update the polygon when any anchor moves
+        anchors.forEach((anchor, i) => {
             anchor.on('dragmove', () => {
                 const newPos = anchor.position()
-                points[index * 2] = newPos.x
-                points[index * 2 + 1] = newPos.y
-                polygon.points(points)
-                anchorLayer.batchDraw()
+                pointPairs[i] = { x: newPos.x, y: newPos.y }
+
+                // ✅ Update polygon points
+                polygon.points(pointPairs.flatMap(({ x, y }) => [x, y]))
+                // transformer should be updated , else they wont move along with anchors
+                transformer.forceUpdate()
+                transformer.getLayer()?.batchDraw()
             })
 
             anchor.on('dragend', () => {
                 this.onChange(group.id(), group.toJSON(), { ...rawAnnotationStore }, polygon.getClientRect())
             })
 
-            anchorLayer.add(anchor)
-            return anchor
-        }
+            this.anchorLayer.add(anchor)
+        })
 
-        // Create initial anchors
-        for (let i = 0; i < points.length / 2; i++) {
-            anchors.push(createAnchor(points[i * 2], points[i * 2 + 1], i))
-        }
+        group.draggable(!rawAnnotationStore.readonly)
+        // 🔹 Handle dragging behavior
 
-        // Update anchors when group moves
         group.on('dragmove', () => {
-            const groupPos = group.getAbsolutePosition()
-            anchors.forEach((anchor, i) => {
-                anchor.position({
-                    x: groupPos.x + points[i * 2],
-                    y: groupPos.y + points[i * 2 + 1]
-                })
-            })
-            anchorLayer.batchDraw()
+            // setting the x and y of group to anchorlayer alone fix as other position methods are not working
+            // due to this code we are setting it initially as well
+            this.anchorLayer.x(group.x()) // ✅ Set anchorLayer X to match group
+            this.anchorLayer.y(group.y()) // ✅ Set anchorLayer Y to match group
+            this.anchorLayer.batchDraw() // ✅ Refresh anchor positions
         })
 
-        // Click event to show transformer and anchors
-        polygon.on('click', e => {
-            e.cancelBubble = true
-            transformer.show()
-            anchors.forEach(anchor => anchor.show())
-            anchorLayer.batchDraw()
-        })
+        // 🔹 Add elements to stage in the correct order
+        konvaStage.add(this.anchorLayer) // ✅ First, add to stage
+        this.anchorLayer.draw() // ✅ Then, draw the layer
 
-        // Hide transformer and anchors when clicking elsewhere
-        konvaStage.on('click', () => {
-            transformer.hide()
-            anchors.forEach(anchor => anchor.hide())
-            anchorLayer.batchDraw()
-        })
-
-        // Add elements to stage
+        // 🔹 Add transformer to background layer
+        transformer.nodes([group])
         this.getBackgroundLayer(konvaStage).add(transformer)
-        konvaStage.add(anchorLayer)
-        anchorLayer.draw()
 
         this.transformerStore.set(groupId, transformer)
+        return
     }
 
     /**
@@ -442,6 +431,11 @@ export class Selector {
                 transformer.nodes([])
             }
         })
+
+        if (this.anchorLayer) {
+            this.anchorLayer.destroy() // ✅ Clears all anchors
+            this.anchorLayer = null
+        }
         this.transformerStore.clear()
         this.currentTransformerId = null
     }
