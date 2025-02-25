@@ -298,8 +298,8 @@ export class Selector {
         const transformer = new Konva.Transformer({
             resizeEnabled: false,
             rotateEnabled: false,
-            borderStrokeWidth: 2,
-            borderStroke: 'blue',
+            borderStroke: defaultOptions.chooseSetting.COLOR,
+            borderStrokeWidth: defaultOptions.chooseSetting.STROKEWIDTH,
             anchorSize: 8,
             padding: 5
         })
