@@ -243,7 +243,7 @@ export const annotationDefinitions: IAnnotationType[] = [
         pdfjsEditorType: PdfjsAnnotationEditorType.INK,
         pdfjsAnnotationType: PdfjsAnnotationType.POLYGON,
         subtype: 'Polygon',
-        isOnce: false,
+        isOnce: true,
         readonly: false,
         icon: <PolygonIcon />,
         style: {

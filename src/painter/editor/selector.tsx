@@ -287,11 +287,11 @@ export class Selector {
 
         //  Get polygon shape from the group
         const polygon = group.children[0] as Konva.Line
-        const points = [...polygon.points()] 
+        const points = [...polygon.points()]
 
         // 🔹 Create a new layer for anchors
         this.anchorLayer = new Konva.Layer()
-        this.anchorLayer.x(group.x()) // ✅ Set anchorLayer X to match group 
+        this.anchorLayer.x(group.x()) // ✅ Set anchorLayer X to match group
         this.anchorLayer.y(group.y()) // To fix the issues of misalignment of anchors while dragging the group
 
         // 🔹 Transformer for polygon
