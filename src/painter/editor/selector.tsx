@@ -71,7 +71,6 @@ export class Selector {
     private bindStageEvents(konvaStage: Konva.Stage): void {
         konvaStage.on('click tap', e => {
             if (e.target !== konvaStage) return
-            console.log('this will clear')
             this.clearTransformers()
         })
     }
@@ -202,17 +201,16 @@ export class Selector {
     private createTransformer(group: Konva.Group, konvaStage: Konva.Stage) {
         const line = group.children[0] as Konva.Line
 
+        const groupId = group.id()
+        const existingTransformer = konvaStage.findOne('.active-transformer') as Konva.Transformer
+        if (existingTransformer) {
+            existingTransformer.destroy()
+        }
+        this.currentTransformerId = groupId
+        const rawAnnotationStore = this.getAnnotationStore(groupId)
+
         // Check if shape is not a line (polygon), rectangle, or circle
-        if (line.attrs.width !== undefined || line.attrs.radiusX !== undefined || (line.attrs.lineCap === 'round' && line.attrs.lineJoin === 'round')) {
-            const groupId = group.id()
-
-            const existingTransformer = konvaStage.findOne('.active-transformer') as Konva.Transformer
-            if (existingTransformer) {
-                existingTransformer.destroy()
-            }
-
-            this.currentTransformerId = groupId
-            const rawAnnotationStore = this.getAnnotationStore(groupId)
+        if (line.className == 'Ellipse' || line.className == 'Rect' || (line.attrs.lineCap === 'round' && line.attrs.lineJoin === 'round')) {
             group.off('dragend')
             const transformer = new Konva.Transformer({
                 resizeEnabled: !rawAnnotationStore.readonly,
@@ -273,25 +271,17 @@ export class Selector {
             this.getBackgroundLayer(konvaStage).add(transformer)
             this.transformerStore.set(groupId, transformer)
             return
-        } else this.createPolygonTempTransformer(group, konvaStage)
+        } else this.createPolygonTempTransformer(group, konvaStage, rawAnnotationStore, groupId)
     }
 
-    private createPolygonTempTransformer(group: Konva.Group, konvaStage: Konva.Stage) {
-        const groupId = group.id()
-
-        const existingTransformer = konvaStage.findOne('.active-transformer') as Konva.Transformer
-        if (existingTransformer) existingTransformer.destroy()
-
-        this.currentTransformerId = groupId
-        const rawAnnotationStore = this.getAnnotationStore(groupId)
-
+    private createPolygonTempTransformer(group: Konva.Group, konvaStage: Konva.Stage, rawAnnotationStore: IAnnotationStore, groupId: string) {
         //  Get polygon shape from the group
         const polygon = group.children[0] as Konva.Line
         const points = [...polygon.points()]
 
         // 🔹 Create a new layer for anchors
         this.anchorLayer = new Konva.Layer()
-        this.anchorLayer.x(group.x()) // ✅ Set anchorLayer X to match group
+        this.anchorLayer.x(group.x()) // Set anchorLayer X to match group
         this.anchorLayer.y(group.y()) // To fix the issues of misalignment of anchors while dragging the group
 
         // 🔹 Transformer for polygon
@@ -304,7 +294,7 @@ export class Selector {
             padding: 5
         })
 
-        // ✅ Convert `points` array into { x, y } objects
+        //  Convert `points` array into { x, y } objects
         let pointPairs = points.reduce((acc, val, index, arr) => {
             if (index % 2 === 0) acc.push({ x: val, y: arr[index + 1] })
             return acc
@@ -331,7 +321,7 @@ export class Selector {
                 const newPos = anchor.position()
                 pointPairs[i] = { x: newPos.x, y: newPos.y }
 
-                // ✅ Update polygon points
+                //  Update polygon points
                 polygon.points(pointPairs.flatMap(({ x, y }) => [x, y]))
                 // transformer should be updated , else they wont move along with anchors
                 transformer.forceUpdate()
@@ -346,19 +336,19 @@ export class Selector {
         })
 
         group.draggable(!rawAnnotationStore.readonly)
-        // 🔹 Handle dragging behavior
+        //  Handle dragging behavior
 
         group.on('dragmove', () => {
             // setting the x and y of group to anchorlayer alone fix as other position methods are not working
             // due to this code we are setting it initially as well
-            this.anchorLayer.x(group.x()) // ✅ Set anchorLayer X to match group
-            this.anchorLayer.y(group.y()) // ✅ Set anchorLayer Y to match group
-            this.anchorLayer.batchDraw() // ✅ Refresh anchor positions
+            this.anchorLayer.x(group.x()) //  Set anchorLayer X to match group
+            this.anchorLayer.y(group.y()) //  Set anchorLayer Y to match group
+            this.anchorLayer.batchDraw() // Refresh anchor positions
         })
 
         // 🔹 Add elements to stage in the correct order
-        konvaStage.add(this.anchorLayer) // ✅ First, add to stage
-        this.anchorLayer.draw() // ✅ Then, draw the layer
+        konvaStage.add(this.anchorLayer) // First, add to stage
+        this.anchorLayer.draw() //  Then, draw the layer
 
         // 🔹 Add transformer to background layer
         transformer.nodes([group])

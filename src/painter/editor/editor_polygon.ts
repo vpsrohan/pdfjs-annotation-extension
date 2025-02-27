@@ -39,9 +39,6 @@ export class EditorPolygon extends Editor {
             this.currentShapeGroup.konvaGroup.add(this.polygon);
         } else {
             if(this.check(pos.x,pos.y)){
-                // pos.x=this.startPos.x
-                // pos.y=this.startPos.y
-                // this.points.push(pos.x,pos.y)
                 this.polygon.points(this.points)
                 this.finalShape();
                 return ;
@@ -65,7 +62,8 @@ export class EditorPolygon extends Editor {
     protected mouseUpHandler() {
         // No need to finalize here since we add vertices on click
     }
-    
+
+    //to finalise the shape
     private finalShape(){
         if(!this.isDrawing || this.points.length < 6) return;
 
@@ -81,6 +79,7 @@ export class EditorPolygon extends Editor {
 
     }
 
+    // to check if the point clicked is close to the start point by seeing the gap between the two points
     private check(x,y){
         if(!this.startPos) return false;
         const dx=x-this.startPos.x;
@@ -89,14 +88,4 @@ export class EditorPolygon extends Editor {
         return Math.sqrt(dx*dx+dy*dy)<=20;
     }
     
-    // private handleDoubleClick = () => {
-    //     this.finalShape();
-    // };
-
-    // protected attachEventListeners() {
-    //     this.konvaStage.on('dblclick', this.handleDoubleClick);
-    // }
-
-    // protected detachEventListeners() {
-    //     this.konvaStage.off('dblclick', this.handleDoubletClick);
 }

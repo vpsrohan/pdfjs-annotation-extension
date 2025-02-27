@@ -13,7 +13,7 @@
         "signature": "签名",
         "stamp": "盖章"
     },
-    "toolbar": {
+    "toolbar": {    
         "buttons": {
             "createSignature": "创建签名"
         },
