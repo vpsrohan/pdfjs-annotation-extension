@@ -120,38 +120,37 @@ export interface IAnnotationStyle {
 
 // 批注的内容接口
 // 用于描述批注的文本或图像内容
-//prettier-ignore
 export interface IAnnotationComment {
-    id: string;
-    title: string; // 批注标题
-    date: string ;// 批注日期
-    content: string; // 批注内容
+    id: string
+    title: string // 批注标题
+    date: string // 批注日期
+    content: string // 批注内容
 }
-//prettier-ignore
+
 export interface IAnnotationContentsObj {
-    text: string; // 文本内容
-    image?: string; // 可选的图片属性
+    text: string // 文本内容
+    image?: string // 可选的图片属性
 }
 
 // 批注存储接口
 // 用于描述存储在应用中的批注信息
-//prettier-ignore
+
 export interface IAnnotationStore {
-    id: string ;// 批注的唯一标识符
-    pageNumber: number; // 批注所在的页码
-    konvaString: string; // Konva 的序列化表示
-    konvaClientRect: IRect; // 批注在 stage 中的位置
-    title: string ;// 批注标题
-    type: AnnotationType; // 批注类型
-    color?: string | null; // 可选颜色，可以是 undefined 或 null
-    subtype: PdfjsAnnotationSubtype;
-    fontSize?: number | null;
-    pdfjsType: PdfjsAnnotationType; // PDF.js 批注类型
-    pdfjsEditorType: PdfjsAnnotationEditorType; // PDF.js 编辑器类型
-    date: string; // 创建或修改日期
-    contentsObj?: IAnnotationContentsObj | null; // 可选的内容对象
-    comments: IAnnotationComment[] ;// 与批注相关的评论数组
-    readonly: boolean; // 表示批注是否只读，不可移动
+    id: string // 批注的唯一标识符
+    pageNumber: number // 批注所在的页码
+    konvaString: string // Konva 的序列化表示
+    konvaClientRect: IRect // 批注在 stage 中的位置
+    title: string // 批注标题
+    type: AnnotationType // 批注类型
+    color?: string | null // 可选颜色，可以是 undefined 或 null
+    subtype: PdfjsAnnotationSubtype
+    fontSize?: number | null
+    pdfjsType: PdfjsAnnotationType // PDF.js 批注类型
+    pdfjsEditorType: PdfjsAnnotationEditorType // PDF.js 编辑器类型
+    date: string // 创建或修改日期
+    contentsObj?: IAnnotationContentsObj | null // 可选的内容对象
+    comments: IAnnotationComment[] // 与批注相关的评论数组
+    readonly: boolean // 表示批注是否只读，不可移动
 }
 
 // 批注类型定义数组
