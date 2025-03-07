@@ -37,6 +37,8 @@ export class EditorPolygon extends Editor {
             });
 
             this.currentShapeGroup.konvaGroup.add(this.polygon);
+            window.addEventListener('mousedown', this.globalPointerDownHandler);
+
         } else {
             if(this.check(pos.x,pos.y)){
                 this.polygon.points(this.points)
@@ -62,6 +64,35 @@ export class EditorPolygon extends Editor {
     protected mouseUpHandler() {
         // No need to finalize here since we add vertices on click
     }
+
+    private globalPointerDownHandler = (e: MouseEvent) => {
+        if (e.button !== 0) return; // Only handle left mouse button
+      
+        // Get the bounding rectangle of the stage container
+        const stageContainer = this.konvaStage.container();
+        const containerRect = stageContainer.getBoundingClientRect();
+        console.log("Stage container bounding box:", containerRect);
+        console.log("Mouse position:", e.clientX, e.clientY);
+      
+        if (
+          e.clientX < containerRect.left ||
+          e.clientX > containerRect.right ||
+          e.clientY < containerRect.top ||
+          e.clientY > containerRect.bottom
+        ) {
+          console.log("Clicked outside the stage (e.g., on the toolbar). Finalizing shape.");
+          window.removeEventListener('mousedown', this.globalPointerDownHandler);
+          this.finalShape();
+          return;
+        }
+      
+        // If inside the stage, call the mouseDownHandler with the original event attached
+        this.mouseDownHandler({
+          currentTarget: this.konvaStage,
+          evt: e // Attach the native event so you can use e.evt.clientX inside mouseDownHandler if needed
+        } as unknown as Konva.KonvaEventObject<MouseEvent>);
+      };
+      
 
     //to finalise the shape
     private finalShape(){
