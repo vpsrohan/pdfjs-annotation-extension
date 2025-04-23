@@ -139,7 +139,6 @@ export class Selector {
      * @param konvaStage - 形状所在的 Konva Stage。
      */
     private bindShapeEvents(shape: Konva.Shape, konvaStage: Konva.Stage): void {
-
         shape.on('pointerdblclick', () => {
             Modal.confirm({
                 title: i18n.t('normal.deleteConfirm'),
@@ -200,67 +199,183 @@ export class Selector {
      * @param konvaStage
      */
     private createTransformer(group: Konva.Group, konvaStage: Konva.Stage) {
+        const line = group.children[0] as Konva.Line
+
+        // Check if shape is not a line (polygon), rectangle, or circle
+        if (line.attrs.width !== undefined || line.attrs.radiusX !== undefined || (line.attrs.lineCap === 'round' && line.attrs.lineJoin === 'round')) {
+            const groupId = group.id()
+
+            const existingTransformer = konvaStage.findOne('.active-transformer') as Konva.Transformer
+            if (existingTransformer) {
+                existingTransformer.destroy()
+            }
+
+            this.currentTransformerId = groupId
+            const rawAnnotationStore = this.getAnnotationStore(groupId)
+            group.off('dragend')
+            const transformer = new Konva.Transformer({
+                resizeEnabled: !rawAnnotationStore.readonly,
+                rotateEnabled: false,
+                borderStrokeWidth: defaultOptions.chooseSetting.STROKEWIDTH,
+                borderStroke: defaultOptions.chooseSetting.COLOR,
+                anchorFill: defaultOptions.chooseSetting.COLOR,
+                anchorStroke: defaultOptions.chooseSetting.COLOR,
+                anchorCornerRadius: 5,
+                anchorStrokeWidth: 2,
+                anchorSize: 8,
+                padding: 1,
+                boundBoxFunc: (oldBox, newBox) => {
+                    newBox.width = Math.max(30, newBox.width)
+                    return newBox
+                }
+            })
+            group.draggable(!rawAnnotationStore.readonly)
+            transformer.off('transformend')
+            transformer.on('transformend', () => {
+                this.onChange(group.id(), group.toJSON(), { ...rawAnnotationStore }, Konva.Node.create(group.toJSON()).getClientRect())
+            })
+
+            transformer.on('dragend', () => {
+                this.onChange(group.id(), group.toJSON(), { ...rawAnnotationStore }, Konva.Node.create(group.toJSON()).getClientRect())
+            })
+
+            transformer.on('dragmove', () => {
+                const boxes = transformer.nodes().map(node => node.getClientRect())
+                const box = this.getTotalBox(boxes)
+                transformer.nodes().forEach(shape => {
+                    const absPos = shape.getAbsolutePosition()
+                    // where are shapes inside bounding box of all shapes?
+                    const offsetX = box.x - absPos.x
+                    const offsetY = box.y - absPos.y
+
+                    // we total box goes outside of viewport, we need to move absolute position of shape
+                    const halfWidth = box.width / 2
+                    const halfHeight = box.height / 2
+                    const newAbsPos = { ...absPos }
+                    if (box.x + halfWidth < 0) {
+                        newAbsPos.x = -offsetX - halfWidth
+                    }
+                    if (box.y + halfHeight < 0) {
+                        newAbsPos.y = -offsetY - halfHeight
+                    }
+                    if (box.x + halfWidth > konvaStage.width()) {
+                        newAbsPos.x = konvaStage.width() - halfWidth - offsetX
+                    }
+                    if (box.y + halfHeight > konvaStage.height()) {
+                        newAbsPos.y = konvaStage.height() - halfHeight - offsetY
+                    }
+                    shape.setAbsolutePosition(newAbsPos)
+                })
+            })
+
+            transformer.nodes([group])
+            this.getBackgroundLayer(konvaStage).add(transformer)
+            this.transformerStore.set(groupId, transformer)
+            return
+        } else this.createPolygonTransformer(group, konvaStage)
+    }
+    private createPolygonTransformer(group: Konva.Group, konvaStage: Konva.Stage) {
         const groupId = group.id()
+
+        // Remove existing transformer
+        const existingTransformer = konvaStage.findOne('.active-transformer') as Konva.Transformer
+        if (existingTransformer) existingTransformer.destroy()
+
         this.currentTransformerId = groupId
         const rawAnnotationStore = this.getAnnotationStore(groupId)
-        group.off('dragend')
+
+        // Get polygon shape from the group
+        const polygon = group.children[0] as Konva.Line
+        let points = [...polygon.points()]
+
+        // Create a new layer for anchors
+        const anchorLayer = new Konva.Layer()
+
+        // Transformer for polygon
         const transformer = new Konva.Transformer({
-            resizeEnabled: !rawAnnotationStore.readonly,
+            nodes: [polygon],
+            resizeEnabled: false,
             rotateEnabled: false,
-            borderStrokeWidth: defaultOptions.chooseSetting.STROKEWIDTH,
-            borderStroke: defaultOptions.chooseSetting.COLOR,
-            anchorFill: defaultOptions.chooseSetting.COLOR,
-            anchorStroke: defaultOptions.chooseSetting.COLOR,
-            anchorCornerRadius: 5,
-            anchorStrokeWidth: 2,
+            borderStrokeWidth: 2,
+            borderStroke: 'blue',
             anchorSize: 8,
-            padding: 1,
-            boundBoxFunc: (oldBox, newBox) => {
-                newBox.width = Math.max(30, newBox.width)
-                return newBox
-            }
-        })
-        group.draggable(!rawAnnotationStore.readonly)
-        transformer.off('transformend')
-        transformer.on('transformend', () => {
-            this.onChange(group.id(), group.toJSON(), { ...rawAnnotationStore }, Konva.Node.create(group.toJSON()).getClientRect())
+            padding: 5
         })
 
-        transformer.on('dragend', () => {
-            this.onChange(group.id(), group.toJSON(), { ...rawAnnotationStore }, Konva.Node.create(group.toJSON()).getClientRect())
-        })
+        // Array to store anchor references
+        let anchors: Konva.Circle[] = []
 
-        transformer.on('dragmove', () => {
-            const boxes = transformer.nodes().map(node => node.getClientRect())
-            const box = this.getTotalBox(boxes)
-            transformer.nodes().forEach(shape => {
-                const absPos = shape.getAbsolutePosition()
-                // where are shapes inside bounding box of all shapes?
-                const offsetX = box.x - absPos.x
-                const offsetY = box.y - absPos.y
+        // Clear existing anchors if any
+        const clearAnchors = () => {
+            anchors.forEach(anchor => anchor.destroy())
+            anchors = []
+        }
+        clearAnchors()
 
-                // we total box goes outside of viewport, we need to move absolute position of shape
-                const halfWidth = box.width / 2
-                const halfHeight = box.height / 2
-                const newAbsPos = { ...absPos }
-                if (box.x + halfWidth < 0) {
-                    newAbsPos.x = -offsetX - halfWidth
-                }
-                if (box.y + halfHeight < 0) {
-                    newAbsPos.y = -offsetY - halfHeight
-                }
-                if (box.x + halfWidth > konvaStage.width()) {
-                    newAbsPos.x = konvaStage.width() - halfWidth - offsetX
-                }
-                if (box.y + halfHeight > konvaStage.height()) {
-                    newAbsPos.y = konvaStage.height() - halfHeight - offsetY
-                }
-                shape.setAbsolutePosition(newAbsPos)
+        // Function to create anchor points
+        const createAnchor = (x: number, y: number, index: number) => {
+            const anchor = new Konva.Circle({
+                x,
+                y,
+                radius: 5,
+                fill: 'black',
+                draggable: !rawAnnotationStore.readonly,
+                name: `anchor-${index}`
             })
+
+            anchor.on('dragmove', () => {
+                const newPos = anchor.position()
+                points[index * 2] = newPos.x
+                points[index * 2 + 1] = newPos.y
+                polygon.points(points)
+                anchorLayer.batchDraw()
+            })
+
+            anchor.on('dragend', () => {
+                this.onChange(group.id(), group.toJSON(), { ...rawAnnotationStore }, polygon.getClientRect())
+            })
+
+            anchorLayer.add(anchor)
+            return anchor
+        }
+
+        // Create initial anchors
+        for (let i = 0; i < points.length / 2; i++) {
+            anchors.push(createAnchor(points[i * 2], points[i * 2 + 1], i))
+        }
+
+        // Update anchors when group moves
+        group.on('dragmove', () => {
+            const groupPos = group.getAbsolutePosition()
+            anchors.forEach((anchor, i) => {
+                anchor.position({
+                    x: groupPos.x + points[i * 2],
+                    y: groupPos.y + points[i * 2 + 1]
+                })
+            })
+            anchorLayer.batchDraw()
         })
 
-        transformer.nodes([group])
+        // Click event to show transformer and anchors
+        polygon.on('click', e => {
+            e.cancelBubble = true
+            transformer.show()
+            anchors.forEach(anchor => anchor.show())
+            anchorLayer.batchDraw()
+        })
+
+        // Hide transformer and anchors when clicking elsewhere
+        konvaStage.on('click', () => {
+            transformer.hide()
+            anchors.forEach(anchor => anchor.hide())
+            anchorLayer.batchDraw()
+        })
+
+        // Add elements to stage
         this.getBackgroundLayer(konvaStage).add(transformer)
+        konvaStage.add(anchorLayer)
+        anchorLayer.draw()
+
         this.transformerStore.set(groupId, transformer)
     }
 

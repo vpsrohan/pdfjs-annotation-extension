@@ -5,6 +5,8 @@
         "strikeout": "删除线",
         "underline": "下划线",
         "rectangle": "矩形",
+        "triangle": "三角形",
+        "polygon": "多边形",
         "circle": "圆形",
         "freehand": "自由绘制",
         "freeHighlight": "自由高亮",

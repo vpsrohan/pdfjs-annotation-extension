@@ -1,10 +1,12 @@
 import {
     CircleIcon,
+    TriangleIcon,
     FreehandIcon,
     FreeHighlightIcon,
     FreetextIcon,
     HighlightIcon,
     RectangleIcon,
+    PolygonIcon,
     SelectIcon,
     SignatureIcon,
     StampIcon,
@@ -33,6 +35,7 @@ export type PdfjsAnnotationSubtype =
     | 'StrikeOut'
     | 'Stamp'
     | 'FileAttachment'
+    | 'Triangle'
 
 // PDF.js 批注类型
 export enum PdfjsAnnotationType {
@@ -62,7 +65,8 @@ export enum PdfjsAnnotationType {
     TRAPNET = 23,
     WATERMARK = 24,
     THREED = 25,
-    REDACT = 26
+    REDACT = 26,
+    TRIANGLE = 27
 }
 
 // PDF.js 自带的批注编辑器类型枚举
@@ -90,7 +94,9 @@ export enum AnnotationType {
     FREEHAND = 7, // 自由绘制批注
     FREE_HIGHLIGHT = 8, // 自由高亮批注
     SIGNATURE = 9, // 签名批注
-    STAMP = 10 // 盖章批注
+    STAMP = 10, // 盖章批注
+    TRIANGLE = 11,
+    POLYGON = 12
 }
 
 // 定义批注类型的接口
@@ -119,35 +125,35 @@ export interface IAnnotationStyle {
 // 批注的内容接口
 // 用于描述批注的文本或图像内容
 export interface IAnnotationComment {
-    id: string;
-    title: string; // 批注标题
-    date: string; // 批注日期
-    content: string; // 批注内容
+    id: string
+    title: string // 批注标题
+    date: string // 批注日期
+    content: string // 批注内容
 }
 
 export interface IAnnotationContentsObj {
-    text: string; // 文本内容
-    image?: string; // 可选的图片属性
+    text: string // 文本内容
+    image?: string // 可选的图片属性
 }
 
 // 批注存储接口
 // 用于描述存储在应用中的批注信息
 export interface IAnnotationStore {
-    id: string; // 批注的唯一标识符
-    pageNumber: number; // 批注所在的页码
-    konvaString: string; // Konva 的序列化表示
-    konvaClientRect: IRect; // 批注在 stage 中的位置
-    title: string; // 批注标题
-    type: AnnotationType; // 批注类型
-    color?: string | null; // 可选颜色，可以是 undefined 或 null
-    subtype: PdfjsAnnotationSubtype;
-    fontSize?: number | null;
-    pdfjsType: PdfjsAnnotationType; // PDF.js 批注类型
-    pdfjsEditorType: PdfjsAnnotationEditorType; // PDF.js 编辑器类型
-    date: string; // 创建或修改日期
-    contentsObj?: IAnnotationContentsObj | null; // 可选的内容对象
-    comments: IAnnotationComment[]; // 与批注相关的评论数组
-    readonly: boolean; // 表示批注是否只读，不可移动
+    id: string // 批注的唯一标识符
+    pageNumber: number // 批注所在的页码
+    konvaString: string // Konva 的序列化表示
+    konvaClientRect: IRect // 批注在 stage 中的位置
+    title: string // 批注标题
+    type: AnnotationType // 批注类型
+    color?: string | null // 可选颜色，可以是 undefined 或 null
+    subtype: PdfjsAnnotationSubtype
+    fontSize?: number | null
+    pdfjsType: PdfjsAnnotationType // PDF.js 批注类型
+    pdfjsEditorType: PdfjsAnnotationEditorType // PDF.js 编辑器类型
+    date: string // 创建或修改日期
+    contentsObj?: IAnnotationContentsObj | null // 可选的内容对象
+    comments: IAnnotationComment[] // 与批注相关的评论数组
+    readonly: boolean // 表示批注是否只读，不可移动
 }
 
 // 批注类型定义数组
@@ -235,6 +241,36 @@ export const annotationDefinitions: IAnnotationType[] = [
         }
     },
     {
+        name: 'triangle',
+        type: AnnotationType.TRIANGLE,
+        pdfjsEditorType: PdfjsAnnotationEditorType.INK,
+        pdfjsAnnotationType: PdfjsAnnotationType.TRIANGLE,
+        subtype: 'Triangle',
+        isOnce: true,
+        readonly: false,
+        icon: <TriangleIcon />,
+        style: {
+            color: defaultOptions.setting.COLOR, // 默认三角形颜色
+            strokeWidth: defaultOptions.setting.STROKE_WIDTH, // 默认线条宽度
+            opacity: defaultOptions.setting.OPACITY // 默认透明度
+        }
+    },
+    {
+        name: 'polygon',
+        type: AnnotationType.POLYGON,
+        pdfjsEditorType: PdfjsAnnotationEditorType.INK,
+        pdfjsAnnotationType: PdfjsAnnotationType.POLYGON,
+        subtype: 'Polygon',
+        isOnce: false,
+        readonly: false,
+        icon: <PolygonIcon />,
+        style: {
+            color: defaultOptions.setting.COLOR, // 默认多边形颜色
+            strokeWidth: defaultOptions.setting.STROKE_WIDTH, // 默认线条宽度
+            opacity: defaultOptions.setting.OPACITY // 默认透明度
+        }
+    },
+    {
         name: 'freehand',
         type: AnnotationType.FREEHAND,
         pdfjsEditorType: PdfjsAnnotationEditorType.INK,
@@ -312,4 +348,3 @@ export const HASH_PARAMS_USERNAME = `${HASH_PARAMS_PREFIX}_username`
 export const HASH_PARAMS_GET_URL = `${HASH_PARAMS_PREFIX}_get_url`
 
 export const HASH_PARAMS_POST_URL = `${HASH_PARAMS_PREFIX}_post_url`
-
